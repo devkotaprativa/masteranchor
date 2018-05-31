@@ -37,6 +37,7 @@
 #define RANGE_FAILED 255
 #define BLINK 4
 #define RANGING_INIT 5
+#define MST_REPORT 6
 #define MSGTYPE_UNKNOWN 254
 
 #define LEN_DATA 116
@@ -76,7 +77,7 @@
 #define TIMER_DELAY_POLL   10    //wait this long for poll ack
 #define TIMER_DELAY_RANGE  10    //wait this long for range report
 #define TIMER_REC_DELAY_POLL 9
-#define DEFAULT_TIMER_DELAY 100   //on Anchor: time between device table cleanup, on tag: pause after cycle complete
+#define DEFAULT_TIMER_DELAY 300   //on Anchor: time between device table cleanup, on tag: pause after cycle complete
  
 
 //debug mode
@@ -110,7 +111,7 @@ class DW1000RangingClass {
     static void initCommunication(unsigned int mySS=DEFAULT_SPI_SS_PIN, unsigned int myIRQ=DEFAULT_SPI_IRQ_PIN, unsigned int myRST=DEFAULT_RST_PIN, unsigned int myWAKE=DEFAULT_WAKE_PIN );
     static void configureNetwork(unsigned int deviceAddress, unsigned int networkId, const byte mode[]);
     static void generalStart();
-    static void startAsAnchor(const char address[], const byte mode[], unsigned short myShortAddress, enum ic_dw1000_deviceType devType);
+    static void startAsAnchor(const char address[], const byte mode[], unsigned short myShortAddress, enum ic_dw1000_deviceType devType, boolean isMaster);
     static void startAsTag(const char address[], const byte mode[], unsigned short myShortAddress, enum ic_dw1000_deviceType devType);
     static bool addNetworkDevices(DW1000Device *device);
     static void removeNetworkDevices(short index);
@@ -130,6 +131,7 @@ class DW1000RangingClass {
     
     //Handlers:
     static void attachNewRange(void (*handleNewRange)(void)) { _handleNewRange = handleNewRange; };
+    static void attachMasterRange(void (*handleMasterRange)(byte*,byte*,float,float)) { _handleMasterRange = handleMasterRange; };
     static void attachMeasureComplete(void (*handleMeasureComplete)(void)) { _handleMeasureComplete = handleMeasureComplete; };
     
     static float getNearestRange();
@@ -155,10 +157,13 @@ class DW1000RangingClass {
     
     //Handlers:
     static void (*_handleNewRange)(void);
+    static void (*_handleMasterRange)(byte*,byte*,float,float);
     static void (*_handleMeasureComplete)(void);
     
     //sketch type (tag or anchor)
     static int _type; //0 for tag and 1 for anchor
+    //Anchor type
+    static boolean _mstAnc;
     // message flow state
     static volatile byte _expectedMsgId;
     // message sent/received state
@@ -208,6 +213,7 @@ class DW1000RangingClass {
     static void transmitRangingInit(DW1000Device *myDistantDevice);
     static void transmitPollAck(DW1000Device *myDistantDevice);
     static void transmitRangeReport(DW1000Device *myDistantDevice);
+    static void transmitMasterReport(DW1000Device *myDistantDevice);
     static void transmitRangeFailed(DW1000Device *myDistantDevice);
     static void receiver();
     

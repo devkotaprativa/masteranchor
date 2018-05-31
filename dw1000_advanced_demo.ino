@@ -19,6 +19,10 @@
 // 2: DW1000 Tag
 #define USED_HARDWARE 0
 
+//define if anchor is a master
+// false: anchor is not a master
+// true: anchor is a master
+#define IS_MASTER true
 
 // On radino32 during production a serial number ist written to EEPROM at address 0x8
 // This serial number will overide the SHORT_ADDRESS define below
@@ -82,9 +86,9 @@ void setup()
   switch (USED_HARDWARE)
   {
     default: break;
-    case 0: setup_anchor(def_short_address, false, usedAntennaDelay); break;
-    case 1: setup_anchor(def_short_address, true, usedAntennaDelay); break;
-    case 2: setup_tag(def_short_address); break;
+    case 0: setup_anchor(def_short_address, false, usedAntennaDelay,IS_MASTER); break;
+    case 1: setup_anchor(def_short_address, true, usedAntennaDelay,IS_MASTER); break;
+    case 2: setup_tag(def_short_address,IS_MASTER); break;
   }
 }
 

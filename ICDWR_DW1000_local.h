@@ -24,6 +24,7 @@
 #define _DW1000_H_INCLUDED
 
 #define dw1000Serial if(false)Serial1
+#define newSerial Serial
 //#define dw1000Serial Serial2
 //#define dw1000Serial Serial1
 #define dw1000SPI SPI_intern

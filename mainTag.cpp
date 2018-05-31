@@ -83,6 +83,7 @@ volatile bool doForceMeasurement = false;
 
 uint8_t cmdOutPutFlag=false;
 char cmdOutPutBuf[64];
+bool _isMaster2 = false;
 
 //#define extraBufLen 4096
 #define extraBufLen 0
@@ -90,8 +91,9 @@ char cmdOutPutBuf[64];
   uint8_t extraSerialBuf[extraBufLen];
 #endif
 
-void setup_tag(uint16_t short_address)
+void setup_tag(uint16_t short_address, bool isMaster)
 {
+  _isMaster2 = isMaster;
   pinLow(PIN_LED_G, OUTPUT);
   pinLow(PIN_LED_Y, OUTPUT);
   pinLow(PIN_LED_R, OUTPUT);
@@ -379,12 +381,12 @@ void loop_tag()
         switch(myConfig_tag.channel)
         {
           default:
-          case 1: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_1, myConfig_tag.ourAddr, MY_DEVICE_TYPE); break;
-          case 2: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_2, myConfig_tag.ourAddr, MY_DEVICE_TYPE); break;
-          case 3: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_3, myConfig_tag.ourAddr, MY_DEVICE_TYPE); break;
-          case 4: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_4, myConfig_tag.ourAddr, MY_DEVICE_TYPE); break;
-          case 5: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_5, myConfig_tag.ourAddr, MY_DEVICE_TYPE); break;
-          case 7: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_7, myConfig_tag.ourAddr, MY_DEVICE_TYPE); break;
+          case 1: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_1, myConfig_tag.ourAddr, MY_DEVICE_TYPE,_isMaster2); break;
+          case 2: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_2, myConfig_tag.ourAddr, MY_DEVICE_TYPE,_isMaster2); break;
+          case 3: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_3, myConfig_tag.ourAddr, MY_DEVICE_TYPE,_isMaster2); break;
+          case 4: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_4, myConfig_tag.ourAddr, MY_DEVICE_TYPE,_isMaster2); break;
+          case 5: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_5, myConfig_tag.ourAddr, MY_DEVICE_TYPE,_isMaster2); break;
+          case 7: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_7, myConfig_tag.ourAddr, MY_DEVICE_TYPE,_isMaster2); break;
         }
         #ifdef DW_TX_POWER
           myConfig_tag.tx_power = (DW_TX_POWER*10);
@@ -736,12 +738,12 @@ void checkCommandMenu_tag()
                 switch(myConfig_tag.channel)
                 {
                   default:
-                  case 1: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_1, myConfig_tag.ourAddr, MY_DEVICE_TYPE); break;
-                  case 2: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_2, myConfig_tag.ourAddr, MY_DEVICE_TYPE); break;
-                  case 3: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_3, myConfig_tag.ourAddr, MY_DEVICE_TYPE); break;
-                  case 4: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_4, myConfig_tag.ourAddr, MY_DEVICE_TYPE); break;
-                  case 5: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_5, myConfig_tag.ourAddr, MY_DEVICE_TYPE); break;
-                  case 7: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_7, myConfig_tag.ourAddr, MY_DEVICE_TYPE); break;
+                  case 1: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_1, myConfig_tag.ourAddr, MY_DEVICE_TYPE,_isMaster2); break;
+                  case 2: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_2, myConfig_tag.ourAddr, MY_DEVICE_TYPE,_isMaster2); break;
+                  case 3: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_3, myConfig_tag.ourAddr, MY_DEVICE_TYPE,_isMaster2); break;
+                  case 4: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_4, myConfig_tag.ourAddr, MY_DEVICE_TYPE,_isMaster2); break;
+                  case 5: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_5, myConfig_tag.ourAddr, MY_DEVICE_TYPE,_isMaster2); break;
+                  case 7: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_7, myConfig_tag.ourAddr, MY_DEVICE_TYPE,_isMaster2); break;
                 }
                 DW1000.setManualTxPower(((float)myConfig_tag.tx_power)/10);
               }

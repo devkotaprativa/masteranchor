@@ -12,11 +12,12 @@
 
 #include "common.h"
 
-void setup_anchor(uint16_t userShortAddress, bool startAsTag = false, uint32_t userAntennaDelay = 0xFFFFFFFF);
+void setup_anchor(uint16_t userShortAddress, bool startAsTag = false, uint32_t userAntennaDelay = 0xFFFFFFFF,bool isMaster=false);
 void loop_anchor();
 
 void printDeviceTable();
 void measureComplete();
 void newRange_anchor();
+void masterRange_anchor(byte* tagAddress, byte* ancAddress, float range, float power);
 
 void checkCommandMenu_anchor();

@@ -29,6 +29,7 @@
 
 bool weAreSleeping = true;
 bool forcedSleep = false;
+int anchor_cpt = 0;
 
 DW1000RangingClass DW1000Ranging;
 
@@ -48,6 +49,8 @@ enum ic_dw1000_deviceType DW1000RangingClass::_myDevType=IC_DW_BASIC;
 
 //module type (anchor or tag)
 int DW1000RangingClass::_type;
+boolean DW1000RangingClass::_mstAnc;
+
 // message flow state
 volatile byte DW1000RangingClass::_expectedMsgId;
 // message sent/received state
@@ -193,7 +196,7 @@ void DW1000RangingClass::generalStart()
     weAreSleeping = false;
 }
 
-void DW1000RangingClass::startAsAnchor(const char address[],  const byte mode[], unsigned short myShortAddress, enum ic_dw1000_deviceType devType)
+void DW1000RangingClass::startAsAnchor(const char address[],  const byte mode[], unsigned short myShortAddress, enum ic_dw1000_deviceType devType, boolean isMaster)
 {
     _networkDevicesNumber = 0;
     //save the address
@@ -215,8 +218,14 @@ void DW1000RangingClass::startAsAnchor(const char address[],  const byte mode[],
     //defined type as anchor
     _type=ANCHOR;
     _myDevType = devType;
+
+    if(isMaster)
+        _mstAnc = true;
+    else
+        _mstAnc = false;
     
     dw1000Serial.println("### ANCHOR ###");
+    //newSerial.println(_mstAnc, DEC);
 }
 
 void DW1000RangingClass::startAsTag(const char address[],  const byte mode[], unsigned short myShortAddress, enum ic_dw1000_deviceType devType)
@@ -307,6 +316,8 @@ DW1000Device* DW1000RangingClass::searchDistantDevice(byte shortAddress[])
     }
     return retVal;
 }
+
+
 
 DW1000Device* DW1000RangingClass::getDistantDevice()
 {
@@ -506,6 +517,8 @@ void DW1000RangingClass::handleReceived()
     DW1000.getData(data, tmpDataLen);
     
     int messageType=detectMessageType(data);
+    //newSerial.println(_mstAnc, DEC);
+    //newSerial.println(messageType, DEC);
     
     //we have just received a BLINK message from tag
     if(messageType==BLINK && _type==TAG)
@@ -571,6 +584,42 @@ if ((myDistantDevice->lastAnsweredBlinkId+1) == myDistantDevice->lastBlinkId)
             }
         }
         _expectedMsgId=POLL;
+    }
+    else if(messageType==MST_REPORT && _type==ANCHOR && _mstAnc==true)
+    {
+        // if(messageType != _expectedMsgId)
+        // {
+        //     return;
+        // }
+        // _expectedMsgId = POLL;
+        ///process range
+        byte address[2];
+        byte destAddress[2];
+        _globalMac.decodeShortMACFrame(data, address, destAddress);
+         //newSerial.println("Master Report Received");
+         //newSerial.println(address[0], HEX);
+         //newSerial.println(destAdress[0], HEX);
+
+        float curRange;
+        memcpy(&curRange, data+1+SHORT_MAC_LEN, 4);
+        float curRXPower;
+        memcpy(&curRXPower, data+5+SHORT_MAC_LEN, 4);
+        newSerial.print("Tag: ");
+        newSerial.print(address[1]*256 + address[0], HEX); newSerial.print(" ");
+        newSerial.print("Anchor: ");
+        newSerial.print(destAddress[1]*256 + destAddress[0], HEX); newSerial.print(" ");
+        newSerial.print("range: ");
+        newSerial.print(curRange); newSerial.print(" ");
+        newSerial.print("power: ");
+        newSerial.print(curRXPower);
+        newSerial.println();
+
+        //if(_handleMasterRange != 0)
+            //(*_handleMasterRange)(address,destAdress,curRange,curRXPower);
+
+
+
+
     }
     else
     {
@@ -639,7 +688,13 @@ if ((myDistantDevice->lastAnsweredBlinkId+1) == myDistantDevice->lastBlinkId)
               //we grab the replytime
               myDistantDevice->timeRangeReceived = timeReceiveStamp;
               noteActivity();
-              _expectedMsgId = POLL;
+
+              // if I am master then expected message is master_report
+              // else we expect POLL
+              // if(_mstAnc)
+              //   _expectedMsgId = MST_REPORT;
+              // else
+                _expectedMsgId = POLL;
               
               if(!_protocolFailed)
               {
@@ -737,8 +792,24 @@ if ((myDistantDevice->lastAnsweredBlinkId+1) == myDistantDevice->lastBlinkId)
                     (*_handleNewRange)();
                   }
                 }
+
+                //transmitMasterReport
+                //newSerial.println("Transmitting");
+                if(anchor_cpt<_networkDevicesNumber-1)
+                {
+                    transmitMasterReport(myDistantDevice);
+                    anchor_cpt ++;
+                }
+                else
+                {
+                    transmitMasterReport(myDistantDevice);
+                    anchor_cpt = 0;
+                    _timerDelay = 0;
+                }
+                //transmitMasterReport(myDistantDevice);
+
                 //Ranging Cycle finished. Jump to next
-                _timerDelay = 0;
+                //_timerDelay = 0;
             }
             else if(messageType == RANGE_FAILED)
             {
@@ -783,13 +854,16 @@ void DW1000RangingClass::timerTick()
         {
                 _expectedMsgId = POLL_ACK;
                 transmitPoll(&_networkDevices[counterForBlink-1]);
+                newSerial.println(counterForBlink);
+                newSerial.println(_networkDevicesNumber);
                 counterForBlink++;
         }
         else if(counterForBlink==0)
         {
+                newSerial.println("counter for blink 0");
                 #define MAX_CCA (30*60*1000)    //Prevent overflow
                 if ((millis()-lastForeignPacket)>MAX_CCA) lastForeignPacket=millis()-MAX_CCA;
-                if ( ((millis()-lastMeasureStart)<500) || ((millis()-lastForeignPacket)<
+                if ( ((millis()-lastMeasureStart)<600) || ((millis()-lastForeignPacket)<
                   ((((100-((millis()-lastMeasureStart)/25))>15)&&((millis()-lastMeasureStart)/25)<100)?(100-((millis()-lastMeasureStart)/25)):15)
                   ) )
                 {
@@ -797,21 +871,24 @@ void DW1000RangingClass::timerTick()
                 }
                 else
                 {
-dw1000Serial.print("Blink start: ");
-dw1000Serial.print(millis()-lastMeasureStart);
-dw1000Serial.print(" cca: ");
-dw1000Serial.print(millis()-lastForeignPacket);
-dw1000Serial.print(" chk: ");
-dw1000Serial.print(100-((millis()-lastMeasureStart)/25));
-dw1000Serial.println();
+newSerial.print("Blink start: ");
+newSerial.print(millis()-lastMeasureStart);
+newSerial.print(" cca: ");
+newSerial.print(millis()-lastForeignPacket);
+newSerial.print(" chk: ");
+newSerial.print(100-((millis()-lastMeasureStart)/25));
+newSerial.println();
                   checkForInactiveDevices();
                   lastMeasureStart=millis();
                   transmitBlink();
                   counterForBlink++;
                 }
+
         }
+
         else
         {
+            newSerial.println("measure complete");
             if(_handleMeasureComplete != 0)
             {
               (*_handleMeasureComplete)();
@@ -1024,6 +1101,27 @@ void DW1000RangingClass::transmitRangeReport(DW1000Device *myDistantDevice) {
 //prevents freezes
 delayMicroseconds(250);
     transmit(data);
+}
+
+void DW1000RangingClass::transmitMasterReport(DW1000Device *myDistantDevice) {
+    transmitInit();
+   // newSerial.println("Transmit Master Begin");
+
+    _globalMac.generateShortMACFrame(data, _currentShortAddress, myDistantDevice->getByteShortAddress());
+    data[SHORT_MAC_LEN] = MST_REPORT;
+    // write final ranging result
+    float curRange=myDistantDevice->getRange();
+    float curRXPower=myDistantDevice->getRXPower();
+    //We add the Range and then the RXPower
+    memcpy(data+1+SHORT_MAC_LEN, &curRange, 4);
+    memcpy(data+5+SHORT_MAC_LEN, &curRXPower, 4);
+    dataToSend = SHORT_MAC_LEN+9;
+    copyShortAddress(_lastSentToShortAddress,myDistantDevice->getByteShortAddress());
+//prevents freezes
+//delayMicroseconds(250);
+    transmit(data);
+   // newSerial.println("Transmit master end");
+
 }
 
 void DW1000RangingClass::transmitRangeFailed(DW1000Device *myDistantDevice) {

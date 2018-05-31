@@ -12,7 +12,7 @@
 
 #include "common.h"
 
-void setup_tag(uint16_t short_address);
+void setup_tag(uint16_t short_address,bool isMaster);
 void loop_tag();
 
 void sleepForMs(uint32_t duration);

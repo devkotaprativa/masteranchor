@@ -53,9 +53,10 @@
 
 uint32_t my_antenna_delay = ANTENNA_DELAY;
 uint16_t my_short_address = 0x0000;
+bool _isMaster = false;
 bool weAreAnchor = true;
 bool dw1000RestartRequested = false;
-void setup_anchor(uint16_t userShortAddress, bool startAsTag, uint32_t userAntennaDelay)
+void setup_anchor(uint16_t userShortAddress, bool startAsTag, uint32_t userAntennaDelay,bool isMaster)
 {
   my_short_address = userShortAddress;
   if (PIN_LED != 0xFF) pinLow(PIN_LED, OUTPUT);
@@ -69,14 +70,17 @@ void setup_anchor(uint16_t userShortAddress, bool startAsTag, uint32_t userAnten
 
   config_load_anchor();
 
+  _isMaster = isMaster;
+
   if (startAsTag) myConfig_anc.weAreTag=true;
   if (myConfig_anc.weAreTag) weAreAnchor=false;
   if (userAntennaDelay!=0xFFFFFFFF) my_antenna_delay = userAntennaDelay;
 
   //init dw1000 configuration
   DW1000Ranging.initCommunication();
-  DW1000Ranging.attachNewRange(newRange_anchor);
-  DW1000Ranging.attachMeasureComplete(measureComplete);
+  //DW1000Ranging.attachNewRange(newRange_anchor);
+  DW1000Ranging.attachMasterRange(masterRange_anchor);
+  //DW1000Ranging.attachMeasureComplete(measureComplete);
 
   if (weAreAnchor) {
     switch(myConfig_anc.channel)
@@ -93,12 +97,12 @@ void setup_anchor(uint16_t userShortAddress, bool startAsTag, uint32_t userAnten
     switch(myConfig_anc.channel)
     {
       default:
-      case 1: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_1, my_short_address, MY_DEVICE_TYPE_T); break;
-      case 2: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_2, my_short_address, MY_DEVICE_TYPE_T); break;
-      case 3: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_3, my_short_address, MY_DEVICE_TYPE_T); break;
-      case 4: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_4, my_short_address, MY_DEVICE_TYPE_T); break;
-      case 5: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_5, my_short_address, MY_DEVICE_TYPE_T); break;
-      case 7: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_7, my_short_address, MY_DEVICE_TYPE_T); break;
+      case 1: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_1, my_short_address, MY_DEVICE_TYPE_T,isMaster); break;
+      case 2: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_2, my_short_address, MY_DEVICE_TYPE_T,isMaster); break;
+      case 3: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_3, my_short_address, MY_DEVICE_TYPE_T,isMaster); break;
+      case 4: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_4, my_short_address, MY_DEVICE_TYPE_T,isMaster); break;
+      case 5: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_5, my_short_address, MY_DEVICE_TYPE_T,isMaster); break;
+      case 7: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_7, my_short_address, MY_DEVICE_TYPE_T,isMaster); break;
     }
   }
 
@@ -122,9 +126,10 @@ void loop_anchor()
 {
   reloadWatchdog();
 
-  checkCommandMenu_anchor();
+  //checkCommandMenu_anchor();
 
   DW1000Ranging.dwloop();
+  //newSerial.println(_isMaster, DEC);
 
   //At least the blink isr should happen. If not maybe DW1000 froze.
   if ( dw1000RestartRequested || (millis()-DW1000Ranging.lastInterruptTime)>(weAreAnchor?1000:5000) )
@@ -133,8 +138,9 @@ void loop_anchor()
     DW1000Ranging.lastInterruptTime = millis();
     //reinit the configuration
     DW1000Ranging.initCommunication();
-    DW1000Ranging.attachNewRange(newRange_anchor);
-    DW1000Ranging.attachMeasureComplete(measureComplete);
+   // DW1000Ranging.attachNewRange(newRange_anchor);
+    DW1000Ranging.attachMasterRange(masterRange_anchor);
+    //DW1000Ranging.attachMeasureComplete(measureComplete);
     if (weAreAnchor) {
       switch(myConfig_anc.channel)
       {
@@ -150,12 +156,12 @@ void loop_anchor()
       switch(myConfig_anc.channel)
       {
         default:
-        case 1: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_1, my_short_address, MY_DEVICE_TYPE_T); break;
-        case 2: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_2, my_short_address, MY_DEVICE_TYPE_T); break;
-        case 3: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_3, my_short_address, MY_DEVICE_TYPE_T); break;
-        case 4: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_4, my_short_address, MY_DEVICE_TYPE_T); break;
-        case 5: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_5, my_short_address, MY_DEVICE_TYPE_T); break;
-        case 7: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_7, my_short_address, MY_DEVICE_TYPE_T); break;
+        case 1: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_1, my_short_address, MY_DEVICE_TYPE_T,_isMaster); break;
+        case 2: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_2, my_short_address, MY_DEVICE_TYPE_T,_isMaster); break;
+        case 3: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_3, my_short_address, MY_DEVICE_TYPE_T,_isMaster); break;
+        case 4: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_4, my_short_address, MY_DEVICE_TYPE_T,_isMaster); break;
+        case 5: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_5, my_short_address, MY_DEVICE_TYPE_T,_isMaster); break;
+        case 7: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_7, my_short_address, MY_DEVICE_TYPE_T,_isMaster); break;
       }
     }
     DW1000.setManualTxPower(myConfig_anc.tx_power);
@@ -193,21 +199,21 @@ void printDeviceTable()
   SerialOut.print("\x1B[2J"); //clear screen
 //  SerialOut.print("Active");
 //  SerialOut.print("\t");
-  SerialOut.print("Type");
-  SerialOut.print("\t");
-  SerialOut.print("Address");
-  SerialOut.print("\t");
-  SerialOut.print("Range");
-  SerialOut.print("\t");
-  SerialOut.print("Battery");
-  SerialOut.print("\t");
-  SerialOut.print("OthRxP");
-  SerialOut.print("\t");
-  SerialOut.print("OurRxP");
-  SerialOut.print("  (ADDR=");
-  SerialOut.print(my_short_address, HEX);
-  SerialOut.print(") ");
-  SerialOut.print(millis() & 0xF, HEX);
+  //SerialOut.print("Type");
+  // SerialOut.print("\t");
+  // SerialOut.print("Address");
+  // SerialOut.print("\t");
+  // SerialOut.print("Range");
+  // SerialOut.print("\t");
+  // SerialOut.print("Battery");
+  // SerialOut.print("\t");
+  // SerialOut.print("OthRxP");
+  // SerialOut.print("\t");
+  // SerialOut.print("OurRxP");
+  // SerialOut.print("  (ADDR=");
+  // SerialOut.print(my_short_address, HEX);
+  // SerialOut.print(") ");
+  // SerialOut.print(millis() & 0xF, HEX);
 #if DO_ANTENNA_CALIB
   if (weAreAnchor)
   {
@@ -286,6 +292,44 @@ void newRange_anchor()
     SerialOut.print(DW1000Ranging.getDistantDevice()->getRXPower());
     SerialOut.println();
   }
+}
+
+void masterRange_anchor(byte* tagAddress, byte* ancAddress, float range, float power)
+{
+// #if DO_ANTENNA_CALIB
+//   if (weAreAnchor)
+//   {
+//     if (DW1000Ranging.getDistantDevice()->getRange() > DO_ANTENNA_CALIB_VALUE)
+//     {
+//       DW1000.setAntennaDelay(++curDelay);
+//     } else {
+//       DW1000.setAntennaDelay(--curDelay);
+//     }
+//     delayAverage *= 19;
+//     delayAverage += curDelay;
+//     delayAverage /= 20;
+//   }
+// #endif
+
+  // if (PIN_LED != 0xFF) {
+  //   led_flashStart = millis();
+  //   digitalWrite(PIN_LED, HIGH);
+  // }
+  // if ( !cmdMode && (!weAreAnchor || !myConfig_anc.outputTable) )
+  // {
+  //   #if PIN_TXEN!=0xFF
+  //     digitalWrite(PIN_TXEN, HIGH);
+  //   #endif
+    SerialOut.print("Tag:");
+    SerialOut.print(tagAddress[1]*256 + tagAddress[0], HEX); SerialOut.print(",");
+    SerialOut.print("Anchor:");
+    SerialOut.print(ancAddress[1]*256 + ancAddress[0], HEX); SerialOut.print(",");
+    SerialOut.print("range:");
+    SerialOut.print(range); SerialOut.print(",");
+    SerialOut.print("power:");
+    SerialOut.print(power);
+    SerialOut.println();
+  // }
 }
 
 #define cmdSerial SerialOut
@@ -408,12 +452,12 @@ void checkCommandMenu_anchor()
                 switch(myConfig_anc.channel)
                 {
                   default:
-                  case 1: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_1, my_short_address, MY_DEVICE_TYPE_T); break;
-                  case 2: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_2, my_short_address, MY_DEVICE_TYPE_T); break;
-                  case 3: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_3, my_short_address, MY_DEVICE_TYPE_T); break;
-                  case 4: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_4, my_short_address, MY_DEVICE_TYPE_T); break;
-                  case 5: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_5, my_short_address, MY_DEVICE_TYPE_T); break;
-                  case 7: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_7, my_short_address, MY_DEVICE_TYPE_T); break;
+                  case 1: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_1, my_short_address, MY_DEVICE_TYPE_T,_isMaster); break;
+                  case 2: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_2, my_short_address, MY_DEVICE_TYPE_T,_isMaster); break;
+                  case 3: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_3, my_short_address, MY_DEVICE_TYPE_T,_isMaster); break;
+                  case 4: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_4, my_short_address, MY_DEVICE_TYPE_T,_isMaster); break;
+                  case 5: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_5, my_short_address, MY_DEVICE_TYPE_T,_isMaster); break;
+                  case 7: DW1000Ranging.startAsAnchor("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_IN_CIRCUIT_7, my_short_address, MY_DEVICE_TYPE_T,_isMaster); break;
                 }
               }
               DW1000.setManualTxPower(myConfig_anc.tx_power);
